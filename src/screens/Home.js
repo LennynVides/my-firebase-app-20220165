@@ -5,11 +5,12 @@ import * as Constantes from '../utils/constantes';
 
 export default function Home({ navigation }) {
   const [nombre, setNombre] = useState(null);
+  const [apellido, setApellido] = useState(null);
   const ip = Constantes.IP;
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${ip}/coffeeshop/api/services/public/cliente.php?action=logOut`, {
+      const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/cliente.php?action=logOut`, {
         method: 'GET'
       });
       const data = await response.json();
@@ -33,50 +34,48 @@ export default function Home({ navigation }) {
 
   const getUser = async () => {
     try {
-      const response = await fetch(`${ip}/coffeeshop/api/services/public/cliente.php?action=getUser`, {
-        method: 'GET'
-      });
-      const data = await response.json();
-      if (data.status) {
-        setNombre(data.name.nombre_cliente);
-      } else {
-        Alert.alert('Error', data.error);
-      }
+        const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/cliente.php?action=getUser`, {
+            method: 'GET'
+        });
+        const data = await response.json();
+        if (data.status) {
+            setNombre(data.username); // Ajusta según la estructura de respuesta del backend
+        } else {
+            Alert.alert('Error', data.error);
+        }
     } catch (error) {
-      Alert.alert('Error', 'Ocurrió un error al cerrar la sesión');
+        Alert.alert('Error', 'Ocurrió un error al obtener los datos del usuario');
     }
-  };
+};
 
-  useEffect(() => {
+useEffect(() => {
     getUser();
-  }, []);
+}, []);
 
-  return (
-    <View style={styles.container}>
+return (
+  <View style={styles.container}>
       <Image
-        source={require('../../assets/coffee-cup-splash.png')}
-        style={styles.image}
+          source={require('../../assets/KIDDYLAND.png')}
+          style={styles.image}
       />
       <Text style={styles.title}>Bienvenid@</Text>
       <Text style={styles.subtitle}>
-        { /*correo ? correo : 'No hay correo para mostrar'*/}
-        {nombre ? nombre : 'No hay Nombre para mostrar'}
+          {nombre ? nombre : 'No hay Nombre para mostrar'}
       </Text>
       <Buttons
-        textoBoton='Cerrar Sesión'
-        accionBoton={handleLogout}
-      />
-
-      <Buttons
-        textoBoton='Ver Productos'
-        accionBoton={irActualizar}
+          textoBoton='Cerrar Sesión'
+          accionBoton={handleLogout}
       />
       <Buttons
-        textoBoton='Editar Usuario'
-        accionBoton={EditUser}
+          textoBoton='Ver Productos'
+          accionBoton={irActualizar}
       />
-    </View>
-  );
+      <Buttons
+          textoBoton='Editar Usuario'
+          accionBoton={EditUser}
+      />
+  </View>
+);
 }
 
 const styles = StyleSheet.create({

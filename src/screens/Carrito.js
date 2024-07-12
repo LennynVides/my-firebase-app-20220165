@@ -3,9 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, StyleSheet, FlatList, Alert } from 'react-native';
 
 import { useFocusEffect } from '@react-navigation/native';
-// Importa la función useFocusEffect de @react-navigation/native, 
-// que permite ejecutar un efecto cada vez que la pantalla se enfoca.
-
 import Constants from 'expo-constants';
 import * as Constantes from '../utils/constantes';
 import Buttons from '../components/Buttons/Button';
@@ -13,34 +10,25 @@ import CarritoCard from '../components/CarritoCard/CarritoCard';
 import ModalEditarCantidad from '../components/Modales/ModalEditarCantidad';
 
 const Carrito = ({ navigation }) => {
-  // Estado para almacenar los detalles del carrito
   const [dataDetalleCarrito, setDataDetalleCarrito] = useState([]);
-  // Estado para el id del detalle seleccionado para modificar
-  const [idDetalle, setIdDetalle] = useState(null);
-  // Estado para la cantidad del producto seleccionado en el carrito
-  const [cantidadProductoCarrito, setCantidadProductoCarrito] = useState(0);
-  // Estado para controlar la visibilidad del modal de edición de cantidad
+  const [idDetallepe, setIdDetallepe] = useState(null); // Cambiado a id_detallepe
+  const [cantidadProductoCarrito, setCantidadProductoCarrito] = useState('0'); // Cambiado a string
   const [modalVisible, setModalVisible] = useState(false);
-  // IP del servidor
   const ip = Constantes.IP;
 
-  // Función para navegar hacia atrás a la pantalla de productos
   const backProducts = () => {
     navigation.navigate('Productos');
   };
 
-  // Efecto para cargar los detalles del carrito al cargar la pantalla o al enfocarse en ella
   useFocusEffect(
-    // La función useFocusEffect ejecuta un efecto cada vez que la pantalla se enfoca.
     React.useCallback(() => {
-      getDetalleCarrito(); // Llama a la función getDetalleCarrito.
+      getDetalleCarrito();
     }, [])
   );
 
-  // Función para obtener los detalles del carrito desde el servidor
   const getDetalleCarrito = async () => {
     try {
-      const response = await fetch(`${ip}/coffeeshop/api/services/public/pedido.php?action=readDetail`, {
+      const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/pedido.php?action=readDetail`, {
         method: 'GET',
       });
       const data = await response.json();
@@ -49,7 +37,7 @@ const Carrito = ({ navigation }) => {
         setDataDetalleCarrito(data.dataset);
       } else {
         console.log("No hay detalles del carrito disponibles")
-        //Alert.alert('ADVERTENCIA', data.error);
+        Alert.alert('ADVERTENCIA', data.error);
       }
     } catch (error) {
       console.error(error, "Error desde Catch");
@@ -57,16 +45,15 @@ const Carrito = ({ navigation }) => {
     }
   };
 
-  // Función para finalizar el pedido
   const finalizarPedido = async () => {
     try {
-      const response = await fetch(`${ip}/coffeeshop/api/services/public/pedido.php?action=finishOrder`, {
+      const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/pedido.php?action=finishOrder`, {
         method: 'GET',
       });
       const data = await response.json();
       if (data.status) {
         Alert.alert("Se finalizó la compra correctamente")
-        setDataDetalleCarrito([]); // Limpia la lista de detalles del carrito
+        setDataDetalleCarrito([]);
         navigation.navigate('TabNavigator', { screen: 'Productos' });
       } else {
         Alert.alert('Error', data.error);
@@ -76,14 +63,12 @@ const Carrito = ({ navigation }) => {
     }
   };
 
-  // Función para manejar la modificación de un detalle del carrito
-  const handleEditarDetalle = (idDetalle, cantidadDetalle) => {
+  const handleEditarDetalle = (idDetallepe, cantidadDetalle) => {
     setModalVisible(true);
-    setIdDetalle(idDetalle);
-    setCantidadProductoCarrito(cantidadDetalle);
+    setIdDetallepe(idDetallepe);
+    setCantidadProductoCarrito(cantidadDetalle.toString()); // Asegurar que cantidadDetalle sea un string
   };
 
-  // Función para renderizar cada elemento del carrito
   const renderItem = ({ item }) => (
     <CarritoCard
       item={item}
@@ -92,31 +77,28 @@ const Carrito = ({ navigation }) => {
       setModalVisible={setModalVisible}
       setCantidadProductoCarrito={setCantidadProductoCarrito}
       cantidadProductoCarrito={cantidadProductoCarrito}
-      idDetalle={idDetalle}
-      setIdDetalle={setIdDetalle}
+      idDetallepe={idDetallepe} // Cambiado a id_detallepe
+      setIdDetallepe={setIdDetallepe} // Cambiado a id_detallepe
       accionBotonDetalle={handleEditarDetalle}
       getDetalleCarrito={getDetalleCarrito}
-      updateDataDetalleCarrito={setDataDetalleCarrito} // Nueva prop para actualizar la lista
+      updateDataDetalleCarrito={setDataDetalleCarrito}
     />
   );
 
   return (
     <View style={styles.container}>
-      {/* Componente de modal para editar cantidad */}
       <ModalEditarCantidad
         setModalVisible={setModalVisible}
         modalVisible={modalVisible}
-        idDetalle={idDetalle}
-        setIdDetalle={setIdDetalle}
+        idDetallepe={idDetallepe} // Cambiado a id_detallepe
+        setIdDetallepe={setIdDetallepe} // Cambiado a id_detallepe
         setCantidadProductoCarrito={setCantidadProductoCarrito}
         cantidadProductoCarrito={cantidadProductoCarrito}
         getDetalleCarrito={getDetalleCarrito}
       />
 
-      {/* Título de la pantalla */}
       <Text style={styles.title}>Carrito de Compras</Text>
 
-      {/* Lista de detalles del carrito */}
       {dataDetalleCarrito.length > 0 ? (
         <FlatList
           data={dataDetalleCarrito}
@@ -127,7 +109,6 @@ const Carrito = ({ navigation }) => {
         <Text style={styles.titleDetalle}>No hay detalles del carrito disponibles.</Text>
       )}
 
-      {/* Botones de finalizar pedido y regresar a productos */}
       <View style={styles.containerButtons}>
         {dataDetalleCarrito.length > 0 && (
           <Buttons
@@ -145,6 +126,7 @@ const Carrito = ({ navigation }) => {
 };
 
 export default Carrito;
+
 
 // Estilos
 const styles = StyleSheet.create({

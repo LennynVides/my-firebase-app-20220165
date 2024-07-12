@@ -1,7 +1,6 @@
-
 import { StatusBar, StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, FlatList, ScrollView, SafeAreaView, Image, Modal } from 'react-native';
-import { useState, useEffect } from 'react';
-import * as Constantes from '../utils/constantes'
+import React, { useState, useEffect } from 'react';
+import * as Constantes from '../utils/constantes';
 import Buttons from '../components/Buttons/Button';
 import ProductoCard from '../components/Productos/ProductoCard';
 import ModalCompra from '../components/Modales/ModalCompra';
@@ -10,103 +9,83 @@ import Constants from 'expo-constants';
 import { FontAwesome } from '@expo/vector-icons'; // Importamos el ícono
 
 export default function Productos({ navigation }) {
-
   const ip = Constantes.IP;
-  const [dataProductos, setDataProductos] = useState([])
-  const [dataCategorias, setDataCategorias] = useState([])
-  const [selectedValue, setSelectedValue] = useState(null);
+  const [dataProductos, setDataProductos] = useState([]);
+  const [dataCategorias, setDataCategorias] = useState([]);
+  const [selectedCategoria, setSelectedCategoria] = useState(null); // Estado para la categoría seleccionada
   const [cantidad, setCantidad] = useState('');
-  const [modalVisible, setModalVisible] = useState(false)
-  const [idProductoModal, setIdProductoModal] = useState('')
-  const [nombreProductoModal, setNombreProductoModal] = useState('')
+  const [modalVisible, setModalVisible] = useState(false);
+  const [idProductoModal, setIdProductoModal] = useState('');
+  const [nombreProductoModal, setNombreProductoModal] = useState('');
 
   const volverInicio = async () => {
-
     navigation.navigate('Home');
-
   };
 
   const handleCompra = (nombre, id) => {
-    setModalVisible(true)
-    setIdProductoModal(id)
-    setNombreProductoModal(nombre)
-  }
+    setModalVisible(true);
+    setIdProductoModal(id);
+    setNombreProductoModal(nombre);
+  };
 
-  //getCategorias Funcion para consultar por medio de una peticion GET los datos de la tabla categoria que se encuentran en la base de datos
-  const getProductos = async (idCategoriaSelect = 1) => {
+  const getProductos = async (idCategoriaSelect = null) => {
     try {
-      if (idCategoriaSelect <= 0) //validar que vaya seleccionada una categoria de productos
-      {
-        return
-      }
+      console.log('ID de Categoría Seleccionado:', idCategoriaSelect); // Agrega esta línea para verificar el ID de categoría enviado
       const formData = new FormData();
-      formData.append('idCategoria', idCategoriaSelect);
-      //utilizar la direccion IP del servidor y no localhost
-      const response = await fetch(`${ip}/coffeeshop/api/services/public/producto.php?action=readProductosCategoria`, {
+      formData.append('id_categoria', idCategoriaSelect);
+      const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/producto.php?action=readProductosCategoria`, {
         method: 'POST',
-        body: formData
+        body: formData,
       });
-
       const data = await response.json();
-      console.log("data al obtener productos  \n", data)
       if (data.status) {
-        console.log("trae datos el dataset", data)
-        setDataProductos(data.dataset)
+        setDataProductos(data.dataset);
       } else {
-        console.log("Data en el ELSE error productos", data);
-        // Alert the user about the error
+        console.error('Error en getProductos:', data.error);
         Alert.alert('Error productos', data.error);
       }
     } catch (error) {
-      console.error(error, "Error desde Catch");
+      console.error('Error en getProductos:', error);
       Alert.alert('Error', 'Ocurrió un error al listar los productos');
     }
-  }
+  };
 
   const getCategorias = async () => {
     try {
-
-      //utilizar la direccion IP del servidor y no localhost
-      const response = await fetch(`${ip}/coffeeshop/api/services/public/categoria.php?action=readAll`, {
+      const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/categoria.php?action=readAll`, {
         method: 'GET',
       });
-
       const data = await response.json();
       if (data.status) {
-        setDataCategorias(data.dataset)
+        setDataCategorias(data.dataset);
       } else {
-        console.log(data);
-        // Alert the user about the error
+        console.error('Error en getCategorias:', data.error);
         Alert.alert('Error categorias', data.error);
       }
     } catch (error) {
+      console.error('Error en getCategorias:', error);
       Alert.alert('Error', 'Ocurrió un error al listar las categorias');
     }
-  }
-
-  const handleCategoriaChange = (itemValue, itemIndex) => {
-    setSelectedCategoria(itemValue);
   };
 
-  //Uso del React Hook UseEffect para que cada vez que se cargue la vista por primera vez
-  //se ejecute la funcion getCategorias
   useEffect(() => {
-    getProductos();
     getCategorias();
   }, []);
 
-  const irCarrito = () => {
-    navigation.navigate('Carrito')
-  }
+  useEffect(() => {
+    if (selectedCategoria !== null) {
+      getProductos(selectedCategoria);
+    }
+  }, [selectedCategoria]);
 
+  const irCarrito = () => {
+    navigation.navigate('Carrito');
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Catalogo de Productos</Text>
-      <Buttons
-        textoBoton='Volver a Home'
-        accionBoton={volverInicio}
-      />
+      <Text style={styles.title}>Catálogo de Productos</Text>
+      <Buttons textoBoton="Volver a Home" accionBoton={volverInicio} />
       <ModalCompra
         visible={modalVisible}
         cerrarModal={setModalVisible}
@@ -116,15 +95,13 @@ export default function Productos({ navigation }) {
         setCantidad={setCantidad}
       />
       <View>
-        <Text style={styles.subtitle}>
-          Selecciona una categoria para filtar productos
-        </Text>
+        <Text style={styles.subtitle}>Selecciona una categoría para filtrar productos</Text>
         <View style={styles.pickerContainer}>
           <RNPickerSelect
             style={{ inputAndroid: styles.picker }}
-            onValueChange={(value) => getProductos(value)}
+            onValueChange={(value) => setSelectedCategoria(value)}
             placeholder={{ label: 'Selecciona una categoría...', value: null }}
-            items={dataCategorias.map(categoria => ({
+            items={dataCategorias.map((categoria) => ({
               label: categoria.nombre_categoria,
               value: categoria.id_categoria,
             }))}
@@ -134,28 +111,26 @@ export default function Productos({ navigation }) {
       <SafeAreaView style={styles.containerFlat}>
         <FlatList
           data={dataProductos}
-          keyExtractor={(item) => item.id_producto}
-          renderItem={({ item }) => ( // Util izamos destructuración para obtener directamente el item
-            <ProductoCard ip={ip}
+          keyExtractor={(item) => item.id_producto.toString()} // Convertir a string el id del producto
+          renderItem={({ item }) => (
+            <ProductoCard
+              ip={ip}
               imagenProducto={item.imagen_producto}
               idProducto={item.id_producto}
               nombreProducto={item.nombre_producto}
               descripcionProducto={item.descripcion_producto}
               precioProducto={item.precio_producto}
-              existenciasProducto={item.existencias_producto}
+              existenciasProducto={item.existencias_productos}
               accionBotonProducto={() => handleCompra(item.nombre_producto, item.id_producto)}
             />
           )}
         />
       </SafeAreaView>
 
-      <TouchableOpacity
-        style={styles.cartButton}
-        onPress={irCarrito}>
+      <TouchableOpacity style={styles.cartButton} onPress={irCarrito}>
         <FontAwesome name="shopping-cart" size={24} color="white" />
         <Text style={styles.cartButtonText}>Ir al carrito</Text>
       </TouchableOpacity>
-
     </View>
   );
 }

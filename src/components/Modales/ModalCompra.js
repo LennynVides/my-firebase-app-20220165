@@ -1,50 +1,48 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState } from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
 import Buttons from '../Buttons/Button';
-import * as Constantes from '../../utils/constantes'
+import * as Constantes from '../../utils/constantes';
 
-const ModalCompra = ({ visible, cerrarModal, nombreProductoModal, idProductoModal, cantidad, setCantidad}) => {
-
+const ModalCompra = ({ visible, cerrarModal, nombreProductoModal, idProductoModal, cantidad, setCantidad }) => {
   const ip = Constantes.IP;
 
   const handleCreateDetail = async () => {
-
     try {
-        if ((cantidad<0)) {
-            Alert.alert("Debes llenar todos los campos")
-            return
+      console.log('idProductoModal:', idProductoModal);
+      console.log('cantidad:', cantidad);
+
+      if (cantidad <= 0) {
+        Alert.alert("La cantidad debe ser mayor que cero");
+        return;
+      } else {
+        const formData = new FormData();
+        formData.append('idProducto', idProductoModal);
+        formData.append('cantidadProducto', cantidad);
+
+        const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/pedido.php?action=createDetail`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        console.log("Respuesta del servidor:", data);
+
+        if (data.status) {
+          Alert.alert('Datos guardados correctamente');
+          cerrarModal(false);
+        } else {
+          Alert.alert('Error', data.error);
         }
-        else {
-            const formData = new FormData();
-            formData.append('idProducto', idProductoModal);
-            formData.append('cantidadProducto', cantidad);
-
-            const response = await fetch(`${ip}/coffeeshop/api/services/public/pedido.php?action=createDetail`, {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-            console.log("data despues del response", data);
-            if (data.status) {
-                Alert.alert('Datos Guardados correctamente');
-                cerrarModal(false);
-            } else {
-                Alert.alert('Error', data.error);
-            }
-        }
-
+      }
     } catch (error) {
-        Alert.alert('Ocurrió un error al crear detalle');
+      Alert.alert('Ocurrió un error al crear detalle');
+      console.error('Error:', error);
     }
-};
+  };
 
   const handleCancelCarrito = () => {
-    // Lógica para agregar al carrito con la cantidad ingresada
-    cerrarModal(false)
+    cerrarModal(false);
   };
-  //logica para la compra del producto - agregar el producto al carrito
-
 
   return (
     <Modal
@@ -61,17 +59,19 @@ const ModalCompra = ({ visible, cerrarModal, nombreProductoModal, idProductoModa
           <Text style={styles.modalText}>Cantidad:</Text>
           <TextInput  
             style={styles.input}
-            value={cantidad}
-            onChangeText={text => setCantidad(text)}
+            value={cantidad.toString()}
+            onChangeText={text => setCantidad(parseInt(text))}
             keyboardType="numeric"
             placeholder="Ingrese la cantidad"
           />
           <Buttons
-          textoBoton='Agregar al carrito'
-          accionBoton={() => handleCreateDetail()}/>
-                    <Buttons
-          textoBoton='Cancelar'
-          accionBoton={() => handleCancelCarrito()}/>
+            textoBoton='Agregar al carrito'
+            accionBoton={handleCreateDetail}
+          />
+          <Buttons
+            textoBoton='Cancelar'
+            accionBoton={handleCancelCarrito}
+          />
         </View>
       </View>
     </Modal>
