@@ -1,7 +1,5 @@
-// Importaciones necesarias
 import React, { useEffect, useState } from 'react';
 import { Text, View, StyleSheet, FlatList, Alert } from 'react-native';
-
 import { useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import * as Constantes from '../utils/constantes';
@@ -11,8 +9,8 @@ import ModalEditarCantidad from '../components/Modales/ModalEditarCantidad';
 
 const Carrito = ({ navigation }) => {
   const [dataDetalleCarrito, setDataDetalleCarrito] = useState([]);
-  const [idDetallepe, setIdDetallepe] = useState(null); // Cambiado a id_detallepe
-  const [cantidadProductoCarrito, setCantidadProductoCarrito] = useState('0'); // Cambiado a string
+  const [idDetallepe, setIdDetallepe] = useState(null);
+  const [cantidadProductoCarrito, setCantidadProductoCarrito] = useState('0');
   const [modalVisible, setModalVisible] = useState(false);
   const ip = Constantes.IP;
 
@@ -32,16 +30,14 @@ const Carrito = ({ navigation }) => {
         method: 'GET',
       });
       const data = await response.json();
-      console.log(data, "Data desde getDetalleCarrito")
       if (data.status) {
         setDataDetalleCarrito(data.dataset);
       } else {
-        console.log("No hay detalles del carrito disponibles")
         Alert.alert('ADVERTENCIA', data.error);
       }
     } catch (error) {
-      console.error(error, "Error desde Catch");
-      Alert.alert('Error', 'Ocurrió un error al listar las categorias');
+      console.error(error);
+      Alert.alert('Error', 'Ocurrió un error al listar las categorías');
     }
   };
 
@@ -52,7 +48,7 @@ const Carrito = ({ navigation }) => {
       });
       const data = await response.json();
       if (data.status) {
-        Alert.alert("Se finalizó la compra correctamente")
+        Alert.alert("Se finalizó la compra correctamente");
         setDataDetalleCarrito([]);
         navigation.navigate('TabNavigator', { screen: 'Productos' });
       } else {
@@ -66,19 +62,18 @@ const Carrito = ({ navigation }) => {
   const handleEditarDetalle = (idDetallepe, cantidadDetalle) => {
     setModalVisible(true);
     setIdDetallepe(idDetallepe);
-    setCantidadProductoCarrito(cantidadDetalle.toString()); // Asegurar que cantidadDetalle sea un string
+    setCantidadProductoCarrito(cantidadDetalle.toString());
   };
 
   const renderItem = ({ item }) => (
     <CarritoCard
       item={item}
-      cargarCategorias={getDetalleCarrito}
       modalVisible={modalVisible}
       setModalVisible={setModalVisible}
       setCantidadProductoCarrito={setCantidadProductoCarrito}
       cantidadProductoCarrito={cantidadProductoCarrito}
-      idDetallepe={idDetallepe} // Cambiado a id_detallepe
-      setIdDetallepe={setIdDetallepe} // Cambiado a id_detallepe
+      idDetallepe={item.id_detallepe}
+      setIdDetallepe={setIdDetallepe}
       accionBotonDetalle={handleEditarDetalle}
       getDetalleCarrito={getDetalleCarrito}
       updateDataDetalleCarrito={setDataDetalleCarrito}
@@ -90,8 +85,7 @@ const Carrito = ({ navigation }) => {
       <ModalEditarCantidad
         setModalVisible={setModalVisible}
         modalVisible={modalVisible}
-        idDetallepe={idDetallepe} // Cambiado a id_detallepe
-        setIdDetallepe={setIdDetallepe} // Cambiado a id_detallepe
+        idDetallepe={idDetallepe}
         setCantidadProductoCarrito={setCantidadProductoCarrito}
         cantidadProductoCarrito={cantidadProductoCarrito}
         getDetalleCarrito={getDetalleCarrito}
@@ -103,7 +97,7 @@ const Carrito = ({ navigation }) => {
         <FlatList
           data={dataDetalleCarrito}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id_detalle.toString()}
+          keyExtractor={(item) => item.id_detallepe.toString()}
         />
       ) : (
         <Text style={styles.titleDetalle}>No hay detalles del carrito disponibles.</Text>
@@ -127,8 +121,6 @@ const Carrito = ({ navigation }) => {
 
 export default Carrito;
 
-
-// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,

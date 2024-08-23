@@ -13,7 +13,7 @@
     },
     "assetBundlePatterns": [
       "**/*"
-    ],        
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -21,10 +21,16 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/KIDDYLAND.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.lextrono.clienteappcoffeeshop"
     },
     "web": {
       "favicon": "./assets/KIDDYLAND.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "62093d4b-9711-4b83-8053-3a344ff00bb1"
+      }
     }
   }
 }

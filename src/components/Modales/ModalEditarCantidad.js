@@ -1,43 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, Text, Modal, StyleSheet, TextInput, Alert } from 'react-native';
 import Buttons from '../Buttons/Button';
 import * as Constantes from '../../utils/constantes';
 
-const ModalEditarCantidad = ({setModalVisible, modalVisible, idDetalle, setCantidadProductoCarrito, cantidadProductoCarrito, getDetalleCarrito}) => {
-
+const ModalEditarCantidad = ({ modalVisible, setModalVisible, idDetallepe, cantidadProductoCarrito, setCantidadProductoCarrito, getDetalleCarrito }) => {
+  const [cantidad, setCantidad] = useState(cantidadProductoCarrito);
   const ip = Constantes.IP;
 
-  const handleUpdateDetalleCarrito = async () => {
-    try {
-      if (cantidadProductoCarrito <= 0) {
-        Alert.alert("La cantidad no puede ser igual o menor a 0");
-        return; // Corrige la lógica aquí
-      }
+  useEffect(() => {
+    if (modalVisible) {
+      setCantidad(cantidadProductoCarrito);
+    }
+  }, [modalVisible]);
 
+  const handleUpdateCantidad = async () => {
+    try {
       const formData = new FormData();
-      formData.append('idDetalle', idDetalle);
-      formData.append('cantidadProducto', cantidadProductoCarrito);
+      formData.append('idDetalle', idDetallepe);
+      formData.append('cantidadProducto', cantidad);
 
       const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/pedido.php?action=updateDetail`, {
         method: 'POST',
-        body: formData
+        body: formData,
       });
-
+      console.log(response);
       const data = await response.json();
       if (data.status) {
-        Alert.alert('Se actualizo el detalle del producto');
+        Alert.alert('Cantidad actualizada correctamente');
         getDetalleCarrito();
+        setModalVisible(false);
       } else {
-        Alert.alert('Error al editar detalle carrito', data.error);
+        Alert.alert('Error', data.error);
       }
-      setModalVisible(false);
     } catch (error) {
-      Alert.alert("Error en editar carrito", error);
-      setModalVisible(false);
+      Alert.alert('Error', 'Ocurrió un error al actualizar la cantidad');
     }
   };
 
-  const handleCancelEditarCarrito = () => {
+  const handleCancel = () => {
+    setCantidadProductoCarrito(cantidadProductoCarrito);
     setModalVisible(false);
   };
 
@@ -52,22 +53,22 @@ const ModalEditarCantidad = ({setModalVisible, modalVisible, idDetalle, setCanti
     >
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
-        <Text style={styles.modalText}>Cantidad actual: {cantidadProductoCarrito}</Text>
+          <Text style={styles.modalText}>Cantidad actual: {cantidadProductoCarrito}</Text>
           <Text style={styles.modalText}>Nueva cantidad:</Text>
           <TextInput
             style={styles.input}
-            value={cantidadProductoCarrito}
-            onChangeText={setCantidadProductoCarrito}
+            value={cantidad.toString()}
+            onChangeText={text => setCantidad(text)}
             keyboardType="numeric"
             placeholder="Ingrese la cantidad"
           />
           <Buttons
             textoBoton='Editar cantidad'
-            accionBoton={handleUpdateDetalleCarrito}
+            accionBoton={handleUpdateCantidad}
           />
           <Buttons
             textoBoton='Cancelar'
-            accionBoton={handleCancelEditarCarrito}
+            accionBoton={handleCancel}
           />
         </View>
       </View>
@@ -110,17 +111,5 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 20,
     width: 200,
-  },
-  button: {
-    backgroundColor: '#007bff',
-    borderRadius: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 });

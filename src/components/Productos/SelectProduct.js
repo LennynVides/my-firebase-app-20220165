@@ -1,30 +1,51 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import { useState } from 'react';
 
+export default function SelectProduct({ ip, imagenProducto, idProducto, nombreProducto, descripcionProducto, precioProducto, existenciasProducto, accionBotonProducto }) {
+  const [cantidad, setCantidad] = useState('');
+  const [existencias, setExistencias] = useState(existenciasProducto);
 
-export default function SelectProduct({ip, imagenProducto, idProducto, nombreProducto, descripcionProducto
-    , precioProducto, existenciasProducto, accionBotonProducto
-}){
+  const handleSeleccionarProducto = () => {
+    const cantidadNum = parseInt(cantidad, 10);
 
-    return(
+    // Validar que la cantidad es un número válido
+    if (isNaN(cantidadNum) || cantidadNum <= 0) {
+      Alert.alert('Error', 'Por favor ingresa una cantidad válida.');
+      return;
+    }
 
-        <View style={styles.card}>
-        <View style={styles.imageContainer}>
-         <Image
-           source={{uri: `${ip}/coffeeshop/api/images/productos/${imagenProducto}`}}
-           style={styles.image}
-           resizeMode="contain" // Ajustar la imagen al contenedor
-         />
-       </View>
-       <Text style={styles.text}>{idProducto}</Text>
-       <Text style={styles.textTitle}>{nombreProducto}</Text>
-       <Text style={styles.text}>{descripcionProducto}</Text>
-       <Text style={styles.textTitle}>Precio: <Text style={styles.textDentro}>${precioProducto}</Text></Text>
-       <Text style={styles.textTitle}>Existencias: <Text style={styles.textDentro}>{existenciasProducto} {(existenciasProducto===1) ?'Unidad':'Unidades'}</Text></Text>
-       <TouchableOpacity style={styles.button} onPress={accionBotonProducto}>
-         <Text style={styles.buttonText}>Seleccionar Producto</Text>
-       </TouchableOpacity>
-       <View style={styles.inputContainer}>
+    // Validar que la cantidad no exceda las existencias
+    if (cantidadNum > existencias) {
+      Alert.alert('Error', 'No puedes agregar más de lo que hay en stock.');
+      return;
+    }
+
+    // Reducir las existencias
+    const nuevasExistencias = existencias - cantidadNum;
+    setExistencias(nuevasExistencias);
+
+    // Llamar a la función de acción del botón con la cantidad seleccionada
+    accionBotonProducto(idProducto, cantidadNum);
+
+    Alert.alert('Éxito', `Has agregado ${cantidadNum} ${nombreProducto}(s) al carrito.`);
+  };
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: `${ip}/Kiddyland3/api/images/producto/${imagenProducto}` }}
+          style={styles.image}
+          resizeMode="contain"
+        />
+      </View>
+      <Text style={styles.text}>{idProducto}</Text>
+      <Text style={styles.textTitle}>{nombreProducto}</Text>
+      <Text style={styles.text}>{descripcionProducto}</Text>
+      <Text style={styles.textTitle}>Precio: <Text style={styles.textDentro}>${precioProducto}</Text></Text>
+      <Text style={styles.textTitle}>Existencias: <Text style={styles.textDentro}>{existencias} {(existencias === 1) ? 'Unidad' : 'Unidades'}</Text></Text>
+      
+      <View style={styles.inputContainer}>
         <Text>Ingresar Cantidad: </Text>
         <TextInput
           style={styles.input}
@@ -33,9 +54,12 @@ export default function SelectProduct({ip, imagenProducto, idProducto, nombrePro
           keyboardType="numeric"
         />
       </View>
-     </View>
-
-    );
+      
+      <TouchableOpacity style={styles.button} onPress={handleSeleccionarProducto}>
+        <Text style={styles.buttonText}>Seleccionar Producto</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 

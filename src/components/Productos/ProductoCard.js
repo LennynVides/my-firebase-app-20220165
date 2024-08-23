@@ -1,24 +1,72 @@
-
-import { StatusBar, StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, FlatList, ScrollView, SafeAreaView, Image } from 'react-native';
+import { StatusBar, StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Image, FlatList } from 'react-native';
 import { useState, useEffect } from 'react';
-import { FontAwesome } from '@expo/vector-icons'; // Importamos el ícono
+import { FontAwesome } from '@expo/vector-icons';
 
-//recibimos por props la imagen del producto, nombre, precio y otras propiedades de productos para mostrarlas en el componente de 
-//productoCard
+export default function ProductoCard({ ip, imagenProducto, idProducto, nombreProducto, descripcionProducto, precioProducto, existenciasProducto, accionBotonProducto }) {
+  const [showCommentInput, setShowCommentInput] = useState(false);
+  const [comentario, setComentario] = useState('');
+  const [comentarios, setComentarios] = useState([]);
 
+  // Obtener comentarios del producto
+  const fetchComentarios = async () => {
+    try {
+      const response = await fetch(`${ip}/Kiddyland3/api/get_comments.php?id_detallepe=${idProducto}`);
+      const result = await response.json();
 
-export default function ProductoCard({ ip, imagenProducto, idProducto, nombreProducto, descripcionProducto
-  , precioProducto, existenciasProducto, accionBotonProducto
-}) {
+      if (result.status === 'success') {
+        setComentarios(result.comentarios);
+      } else {
+        Alert.alert('Error', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Error al obtener comentarios: ' + error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchComentarios();
+  }, [idProducto]);
+
+  const handleComentarioSubmit = async () => {
+    try {
+      const comentarioData = {
+        id_detallepe: idProducto, // Cambia según tu lógica
+        valoracion: 'Buena', // Cambia según tu lógica
+        comentario: comentario,
+      };
+
+      console.log('Datos enviados:', comentarioData); // Imprime los datos en la consola
+
+      const response = await fetch(`${ip}/Kiddyland3/api/add_comment.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(comentarioData),
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        Alert.alert('Comentario Enviado', result.message);
+        setComentario('');
+        setShowCommentInput(false);
+        fetchComentarios(); // Actualiza la lista de comentarios después de enviar
+      } else {
+        Alert.alert('Error', result.message);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Error al enviar el comentario: ' + error.message);
+    }
+  };
 
   return (
-
     <View style={styles.card}>
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: `${ip}/coffeeshop/api/images/productos/${imagenProducto}` }}
+          source={{ uri: `${ip}/Kiddyland3/api/images/producto/${imagenProducto}` }}
           style={styles.image}
-          resizeMode="contain" // Ajustar la imagen al contenedor
+          resizeMode="contain"
         />
       </View>
       <Text style={styles.text}>{idProducto}</Text>
@@ -32,11 +80,51 @@ export default function ProductoCard({ ip, imagenProducto, idProducto, nombrePro
         <FontAwesome name="plus-circle" size={24} color="white" />
         <Text style={styles.cartButtonText}>Seleccionar Producto</Text>
       </TouchableOpacity>
-    </View>
 
+      {/* Botón para mostrar campo de comentario */}
+      <TouchableOpacity
+        style={styles.commentButton}
+        onPress={() => setShowCommentInput(!showCommentInput)}>
+        <Text style={styles.commentButtonText}>
+          {showCommentInput ? 'Cancelar' : 'Agregar Comentario'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Campo de comentario */}
+      {showCommentInput && (
+        <View style={styles.commentContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Escribe tu comentario aquí..."
+            value={comentario}
+            onChangeText={setComentario}
+            multiline
+            numberOfLines={4}
+          />
+          <TouchableOpacity style={styles.button} onPress={handleComentarioSubmit}>
+            <Text style={styles.buttonText}>Enviar Comentario</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Comentarios */}
+      <View style={styles.commentsContainer}>
+        <Text style={styles.commentsTitle}>Comentarios:</Text>
+        <FlatList
+          data={comentarios}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.commentItem}>
+              <Text style={styles.commentDate}>{item.fecha_valo}</Text>
+              <Text style={styles.commentRating}>Valoración: {item.valoracion}</Text>
+              <Text style={styles.commentText}>{item.comentario}</Text>
+            </View>
+          )}
+        />
+      </View>
+    </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   containerFlat: {
@@ -71,7 +159,8 @@ const styles = StyleSheet.create({
   },
   textTitle: {
     fontSize: 16,
-    marginBottom: 8, fontWeight: '700'
+    marginBottom: 8,
+    fontWeight: '700'
   },
   inputContainer: {
     flexDirection: 'row',
@@ -92,6 +181,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     alignItems: 'center',
+    marginTop: 10,
   },
   buttonText: {
     color: '#ffffff',
@@ -105,8 +195,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   imageContainer: {
-    alignItems: 'center', // Centrar imagen horizontalmente
-  }, textDentro: {
+    alignItems: 'center',
+  },
+  textDentro: {
     fontWeight: '400'
   },
   cartButton: {
@@ -126,5 +217,44 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     textAlign: 'center'
   },
+  commentButton: {
+    marginTop: 10,
+    backgroundColor: '#AF8260',
+    borderRadius: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  commentButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  commentContainer: {
+    marginTop: 10,
+  },
+  commentsContainer: {
+    marginTop: 20,
+  },
+  commentsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  commentItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  commentDate: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  commentRating: {
+    fontSize: 14,
+    fontStyle: 'italic',
+  },
+  commentText: {
+    fontSize: 14,
+  },
 });
-

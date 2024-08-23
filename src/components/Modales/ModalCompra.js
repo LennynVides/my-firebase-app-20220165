@@ -8,34 +8,40 @@ const ModalCompra = ({ visible, cerrarModal, nombreProductoModal, idProductoModa
 
   const handleCreateDetail = async () => {
     try {
-      console.log('idProductoModal:', idProductoModal);
-      console.log('cantidad:', cantidad);
-
-      if (cantidad <= 0) {
-        Alert.alert("La cantidad debe ser mayor que cero");
+      if (cantidad <= 0 || isNaN(parseInt(cantidad))) {
+        Alert.alert("La cantidad debe ser un número mayor que cero");
         return;
       } else {
         const formData = new FormData();
         formData.append('idProducto', idProductoModal);
         formData.append('cantidadProducto', cantidad);
-
+  
         const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/pedido.php?action=createDetail`, {
           method: 'POST',
           body: formData
         });
-
+        // Verificar si la respuesta es exitosa antes de intentar parsear JSON
+        if (!response.ok) {
+          throw new Error(`Error de red: ${response.status} - ${response.statusText}`);
+        }
+  
         const data = await response.json();
         console.log("Respuesta del servidor:", data);
-
+  
         if (data.status) {
-          Alert.alert('Datos guardados correctamente');
+          Alert.alert('Producto agregado correctamente');
           cerrarModal(false);
         } else {
-          Alert.alert('Error', data.error);
+          if (data.session === 0) {
+            Alert.alert('Error', 'Debe iniciar sesión para agregar el producto al carrito');
+            // Aquí podrías redirigir a la pantalla de inicio de sesión si lo deseas
+          } else {
+            Alert.alert('Error', data.error || 'Error al guardar los datos');
+          }
         }
       }
     } catch (error) {
-      Alert.alert('Ocurrió un error al crear detalle');
+      Alert.alert('Ocurrió un error al crear detalle', error.message);
       console.error('Error:', error);
     }
   };
@@ -43,6 +49,7 @@ const ModalCompra = ({ visible, cerrarModal, nombreProductoModal, idProductoModa
   const handleCancelCarrito = () => {
     cerrarModal(false);
   };
+
 
   return (
     <Modal
@@ -59,19 +66,17 @@ const ModalCompra = ({ visible, cerrarModal, nombreProductoModal, idProductoModa
           <Text style={styles.modalText}>Cantidad:</Text>
           <TextInput  
             style={styles.input}
-            value={cantidad.toString()}
-            onChangeText={text => setCantidad(parseInt(text))}
+            value={cantidad}
+            onChangeText={text => setCantidad(text)}
             keyboardType="numeric"
             placeholder="Ingrese la cantidad"
           />
           <Buttons
-            textoBoton='Agregar al carrito'
-            accionBoton={handleCreateDetail}
-          />
-          <Buttons
-            textoBoton='Cancelar'
-            accionBoton={handleCancelCarrito}
-          />
+          textoBoton='Agregar al carrito'
+          accionBoton={() => handleCreateDetail()}/>
+                    <Buttons
+          textoBoton='Cancelar'
+          accionBoton={() => handleCancelCarrito()}/>
         </View>
       </View>
     </Modal>

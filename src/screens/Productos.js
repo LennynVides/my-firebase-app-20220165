@@ -1,24 +1,33 @@
-import { StatusBar, StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, FlatList, ScrollView, SafeAreaView, Image, Modal } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { StatusBar, StyleSheet, Text, View, TouchableOpacity, Alert, FlatList, SafeAreaView, Animated } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
 import * as Constantes from '../utils/constantes';
 import Buttons from '../components/Buttons/Button';
 import ProductoCard from '../components/Productos/ProductoCard';
 import ModalCompra from '../components/Modales/ModalCompra';
 import RNPickerSelect from 'react-native-picker-select';
 import Constants from 'expo-constants';
-import { FontAwesome } from '@expo/vector-icons'; // Importamos el ícono
+import { FontAwesome } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
 
 export default function Productos({ navigation }) {
   const ip = Constantes.IP;
   const [dataProductos, setDataProductos] = useState([]);
   const [dataCategorias, setDataCategorias] = useState([]);
-  const [selectedCategoria, setSelectedCategoria] = useState(null); // Estado para la categoría seleccionada
+  const [selectedCategoria, setSelectedCategoria] = useState(null);
   const [cantidad, setCantidad] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [idProductoModal, setIdProductoModal] = useState('');
   const [nombreProductoModal, setNombreProductoModal] = useState('');
 
-  const volverInicio = async () => {
+  // Estados de animación
+  const titleOpacity = useRef(new Animated.Value(0)).current;
+  const subtitleOpacity = useRef(new Animated.Value(0)).current;
+  const pickerScale = useRef(new Animated.Value(1)).current;
+  const cartButtonScale = useRef(new Animated.Value(1)).current;
+
+  const isFocused = useIsFocused();
+
+  const volverInicio = () => {
     navigation.navigate('Home');
   };
 
@@ -30,10 +39,17 @@ export default function Productos({ navigation }) {
 
   const getProductos = async (idCategoriaSelect = null) => {
     try {
-      console.log('ID de Categoría Seleccionado:', idCategoriaSelect); // Agrega esta línea para verificar el ID de categoría enviado
       const formData = new FormData();
-      formData.append('id_categoria', idCategoriaSelect);
-      const response = await fetch(`${ip}/Kiddyland3/api/servicios/publico/producto.php?action=readProductosCategoria`, {
+      let endpoint = `${ip}/Kiddyland3/api/servicios/publico/producto.php`;
+
+      if (idCategoriaSelect !== null) {
+        formData.append('id_categoria', idCategoriaSelect);
+        endpoint += `?action=readProductosCategoria`;
+      } else {
+        endpoint += `?action=readAll`;
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
@@ -69,23 +85,85 @@ export default function Productos({ navigation }) {
   };
 
   useEffect(() => {
+    if (isFocused) {
+      // Animaciones
+      Animated.parallel([
+        Animated.timing(titleOpacity, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }).start(),
+        Animated.timing(subtitleOpacity, {
+          toValue: 1,
+          duration: 1000,
+          delay: 500,
+          useNativeDriver: true,
+        }).start(),
+        Animated.spring(pickerScale, {
+          toValue: 1.05,
+          friction: 4,
+          useNativeDriver: true,
+        }).start(),
+        Animated.spring(cartButtonScale, {
+          toValue: 1.05,
+          friction: 4,
+          useNativeDriver: true,
+        }).start(),
+      ]);
+    }
+  }, [isFocused]);
+
+  useEffect(() => {
     getCategorias();
+    getProductos();
   }, []);
 
   useEffect(() => {
-    if (selectedCategoria !== null) {
-      getProductos(selectedCategoria);
-    }
+    getProductos(selectedCategoria);
   }, [selectedCategoria]);
 
   const irCarrito = () => {
     navigation.navigate('Carrito');
   };
 
+  const handlePressIn = (scale) => {
+    Animated.spring(scale, {
+      toValue: 0.95,
+      friction: 4,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = (scale) => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 4,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const renderItem = ({ item }) => (
+    <Animated.View style={{ transform: [{ scale: 1.02 }] }}>
+      <ProductoCard
+        ip={ip}
+        imagenProducto={item.imagen_producto}
+        idProducto={item.id_producto}
+        nombreProducto={item.nombre_producto}
+        descripcionProducto={item.descripcion_producto}
+        precioProducto={item.precio_producto}
+        existenciasProducto={item.existencias_productos}
+        accionBotonProducto={() => handleCompra(item.nombre_producto, item.id_producto)}
+      />
+    </Animated.View>
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Catálogo de Productos</Text>
+      <Animated.Text style={[styles.title, { opacity: titleOpacity }]}>
+        Catálogo de Productos
+      </Animated.Text>
       <Buttons textoBoton="Volver a Home" accionBoton={volverInicio} />
+
       <ModalCompra
         visible={modalVisible}
         cerrarModal={setModalVisible}
@@ -94,43 +172,45 @@ export default function Productos({ navigation }) {
         cantidad={cantidad}
         setCantidad={setCantidad}
       />
+
       <View>
-        <Text style={styles.subtitle}>Selecciona una categoría para filtrar productos</Text>
-        <View style={styles.pickerContainer}>
-          <RNPickerSelect
-            style={{ inputAndroid: styles.picker }}
-            onValueChange={(value) => setSelectedCategoria(value)}
-            placeholder={{ label: 'Selecciona una categoría...', value: null }}
-            items={dataCategorias.map((categoria) => ({
-              label: categoria.nombre_categoria,
-              value: categoria.id_categoria,
-            }))}
-          />
-        </View>
+        <Animated.Text style={[styles.subtitle, { opacity: subtitleOpacity }]}>
+          Selecciona una categoría para filtrar productos
+        </Animated.Text>
+        <Animated.View style={{ transform: [{ scale: pickerScale }] }}>
+          <View style={styles.pickerContainer}>
+            <RNPickerSelect
+              style={{ inputAndroid: styles.picker }}
+              onValueChange={(value) => setSelectedCategoria(value)}
+              placeholder={{ label: 'Selecciona una categoría...', value: null }}
+              items={dataCategorias.map((categoria) => ({
+                label: categoria.nombre_categoria,
+                value: categoria.id_categoria,
+              }))}
+            />
+          </View>
+        </Animated.View>
       </View>
+
       <SafeAreaView style={styles.containerFlat}>
         <FlatList
           data={dataProductos}
-          keyExtractor={(item) => item.id_producto.toString()} // Convertir a string el id del producto
-          renderItem={({ item }) => (
-            <ProductoCard
-              ip={ip}
-              imagenProducto={item.imagen_producto}
-              idProducto={item.id_producto}
-              nombreProducto={item.nombre_producto}
-              descripcionProducto={item.descripcion_producto}
-              precioProducto={item.precio_producto}
-              existenciasProducto={item.existencias_productos}
-              accionBotonProducto={() => handleCompra(item.nombre_producto, item.id_producto)}
-            />
-          )}
+          keyExtractor={(item) => item.id_producto.toString()}
+          renderItem={renderItem}
         />
       </SafeAreaView>
 
-      <TouchableOpacity style={styles.cartButton} onPress={irCarrito}>
-        <FontAwesome name="shopping-cart" size={24} color="white" />
-        <Text style={styles.cartButtonText}>Ir al carrito</Text>
-      </TouchableOpacity>
+      <Animated.View style={{ transform: [{ scale: cartButtonScale }] }}>
+        <TouchableOpacity
+          style={styles.cartButton}
+          onPress={irCarrito}
+          onPressIn={() => handlePressIn(cartButtonScale)}
+          onPressOut={() => handlePressOut(cartButtonScale)}
+        >
+          <FontAwesome name="shopping-cart" size={24} color="white" />
+          <Text style={styles.cartButtonText}>Ir al carrito</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -147,73 +227,31 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: Constants.statusBarHeight,
   },
-  card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
-    marginVertical: 1,
-    marginHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  text: {
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  textTitle: {
-    fontSize: 16,
-    marginBottom: 8,
-    fontWeight: '700'
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 8,
-    marginLeft: 8,
-  },
-  button: {
-    backgroundColor: '#AF8260',
-    borderRadius: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600'
-  },
-  image: {
-    width: '65%',
-    height: 150,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  imageContainer: {
-    alignItems: 'center',
-  },
-  textDentro: {
-    fontWeight: '400'
-  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 16,
     color: '#5C3D2E',
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginVertical: 5,
+    marginHorizontal: 5,
+    color: '#5C3D2E',
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#AF8260',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 10,
+    backgroundColor: '#AF8260',
+  },
+  picker: {
+    color: '#ffffff'
   },
   cartButton: {
     flexDirection: 'row',
@@ -229,24 +267,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 10,
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginVertical: 5,
-    marginHorizontal: 5,
-    color: '#5C3D2E', // Brown color for the title
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#AF8260', // Color del borde
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 10,
-    backgroundColor: '#AF8260', // Color de fondo
-  },
-  picker: {
-    color: '#ffffff'
   },
 });
